@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>鬼畜活字乱刷 — 宣传片录制</title>
+<style>
+:root{--bg:#1a1a2e;--surface:#16213e;--border:#0f3460;--border-sub:#333;--text:#e0e0e0;--text-dim:#888;--text-muted:#666;--accent:#e94560;--btn-bg:#2a2a4a;--btn-text:#ccc;--char-bg:#1a2a3a;--char-border:#2a4a5a;--timeline-bg:#12122a;--timeline-border:#2a2a4a;--timeline-char-bg:#2a1a3a;--timeline-char-border:#4a2a5a}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;font-family:'Segoe UI','Microsoft YaHei','SimHei',sans-serif;background:var(--bg);color:var(--text);overflow:hidden;user-select:none;width:100vw}
+.app{display:flex;flex-direction:column;height:100vh;width:100vw}
+
+/* Titlebar same as app */
+.titlebar{display:flex;align-items:center;height:36px;background:#0f0f1e;flex-shrink:0;padding:0 8px}
+.titlebar-text{font-size:13px;font-weight:600;color:#888;padding-left:14px}
+
+/* Full screen scene containers */
+.scene{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .6s}
+.scene.active{opacity:1;pointer-events:auto}
+
+/* Scene 1: Logo + subtitle */
+#s1 .title-main{font-size:64px;font-weight:900;background:linear-gradient(135deg,#4a8cff,#e94560);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:6px}
+#s1 .title-sub{font-size:20px;color:#8888aa;letter-spacing:12px;margin-top:12px}
+#s1 .title-tag{font-size:14px;color:#5a5a7a;margin-top:24px;letter-spacing:2px}
+#s1 .deco-line{width:0;height:2px;background:linear-gradient(90deg,#4a8cff,#e94560);margin:16px auto;transition:width 1.5s}
+#s1.active .deco-line{width:200px}
+
+/* Scene 2: Char rain / word cloud */
+#s2 .char-rain-area{position:relative;width:700px;height:400px;max-width:90vw;overflow:hidden}
+.char-particle{position:absolute;font-size:28px;font-weight:700;color:rgba(255,255,255,.08);animation:floatUp linear infinite;pointer-events:none}
+@keyframes floatUp{0%{transform:translateY(420px) scale(.3);opacity:0}10%{opacity:1}90%{opacity:1}100%{transform:translateY(-60px) scale(1.2);opacity:0}}
+.char-center{position:absolute;font-size:80px;font-weight:900;color:var(--accent);top:50%;left:50%;transform:translate(-50%,-50%);animation:pulse 1.5s ease-in-out infinite}
+@keyframes pulse{0%,100%{transform:translate(-50%,-50%) scale(1);opacity:1}50%{transform:translate(-50%,-50%) scale(1.15);opacity:.8}}
+
+/* Scene 3: Timeline with animated chars */
+#s3 .tl-wrapper{background:var(--timeline-bg);border:1px solid var(--timeline-border);border-radius:12px;padding:24px 20px;width:760px;max-width:92vw}
+#s3 .tl-label{font-size:13px;color:var(--text-dim);margin-bottom:12px;font-weight:600;letter-spacing:1px}
+.tl-track{display:flex;gap:4px;flex-wrap:wrap;min-height:56px;align-items:center}
+.tl-item{width:44px;height:44px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:#fff;transform:scale(0);opacity:0;transition:all .35s cubic-bezier(.34,1.56,.64,1)}
+.tl-item.show{transform:scale(1);opacity:1}
+.tl-item:nth-child(4n+1){background:#4a8cff}
+.tl-item:nth-child(4n+2){background:#e94560}
+.tl-item:nth-child(4n+3){background:#4aaf50}
+.tl-item:nth-child(4n){background:#e9a545}
+
+/* Scene 4: Big char bounce */
+#s4 .big-char-area{width:600px;height:300px;max-width:90vw;position:relative}
+.big-char{position:absolute;font-size:120px;font-weight:900;opacity:0;transition:all .5s cubic-bezier(.34,1.56,.64,1)}
+.big-char.show{opacity:1}
+.big-char.bounce{animation:bounce .4s cubic-bezier(.34,1.56,.64,1)}
+@keyframes bounce{0%{transform:scale(0) rotate(-10deg)}50%{transform:scale(1.3) rotate(5deg)}100%{transform:scale(1) rotate(0deg)}}
+
+/* Scene 5: Rapid fire (鬼畜核心) */
+#s5 .rapid-area{position:relative;width:700px;height:200px;max-width:90vw;overflow:hidden}
+.rapid-char{position:absolute;font-size:48px;font-weight:900;transition:all .1s}
+.rapid-char.top{color:#4a8cff;top:-10px}
+.rapid-char.mid{color:#e94560;top:50px}
+.rapid-char.bot{color:#4aaf50;top:110px}
+
+/* Scene 6: End */
+#s6 .end-title{font-size:56px;font-weight:900;background:linear-gradient(135deg,#4a8cff,#e94560,#4aaf50);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:4px}
+#s6 .end-sub{font-size:16px;color:#8888aa;letter-spacing:6px;margin-top:16px}
+#s6 .end-footer{font-size:12px;color:#5a5a7a;margin-top:32px;letter-spacing:2px}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="titlebar"><span class="titlebar-text">鬼畜活字乱刷</span></div>
+
+  <!-- Scene 1: Logo -->
+  <div class="scene active" id="s1">
+    <div class="title-main">鬼畜活字乱刷</div>
+    <div class="title-sub">文本动画编辑神器</div>
+    <div class="deco-line"></div>
+    <div class="title-tag">每个字都精准到位</div>
+  </div>
+
+  <!-- Scene 2: Char rain -->
+  <div class="scene" id="s2">
+    <div class="char-rain-area" id="rainArea">
+      <div class="char-center" id="centerChar">字</div>
+    </div>
+  </div>
+
+  <!-- Scene 3: Timeline editing -->
+  <div class="scene" id="s3">
+    <div style="text-align:center;margin-bottom:24px">
+      <div style="font-size:22px;font-weight:700;color:var(--accent)">拖拽排字 · 自由组合</div>
+      <div style="font-size:13px;color:var(--text-dim);margin-top:6px">时间轴编辑 · 复制粘贴 · 撤销重做</div>
+    </div>
+    <div class="tl-wrapper">
+      <div class="tl-label">📋 时间轴 — 共 12 个字</div>
+      <div class="tl-track" id="tlTrack"></div>
+    </div>
+  </div>
+
+  <!-- Scene 4: Big char -->
+  <div class="scene" id="s4">
+    <div style="text-align:center;margin-bottom:20px">
+      <div style="font-size:18px;font-weight:600;color:var(--text);letter-spacing:2px">逐字操控 · 不限次数</div>
+    </div>
+    <div class="big-char-area" id="bigCharArea">
+      <div class="big-char" style="left:20px;top:30px;color:#4a8cff">鬼</div>
+      <div class="big-char" style="left:170px;top:10px;color:#e94560">畜</div>
+      <div class="big-char" style="left:320px;top:40px;color:#4aaf50">活</div>
+      <div class="big-char" style="left:470px;top:20px;color:#e9a545">字</div>
+    </div>
+  </div>
+
+  <!-- Scene 5: Rapid fire (鬼畜节奏) -->
+  <div class="scene" id="s5">
+    <div style="text-align:center;margin-bottom:24px">
+      <div style="font-size:18px;font-weight:700;color:var(--accent)">⚡ 节奏拼接 · 一气呵成</div>
+    </div>
+    <div class="rapid-area" id="rapidArea"></div>
+  </div>
+
+  <!-- Scene 6: End -->
+  <div class="scene" id="s6">
+    <div class="end-title">鬼畜活字乱刷</div>
+    <div class="end-sub">让每个字都有灵魂</div>
+    <div class="end-footer">Electron · Whisper · FFmpeg</div>
+  </div>
+</div>
+
+<script>
+const chars = '你好好好啊鬼畜活字刷剪辑配音音频视频轨道导出导入识别语音自动化编辑制作神器'.split('');
+const colors = ['#4a8cff','#e94560','#4aaf50','#e9a545','#9b59b6','#1abc9c','#3498db','#e74c3c'];
+
+// Scene 2: char rain
+const rainArea = document.getElementById('rainArea');
+const centerChar = document.getElementById('centerChar');
+const rainChars = '鬼畜活字刷制作神器你好啊剪辑配音音频视频轨道';
+let rainInterval;
+function startRain(){
+  const area = document.getElementById('rainArea');
+  area.innerHTML = '<div class="char-center" id="centerChar">' + centerChar.textContent + '</div>';
+  for(let i=0;i<35;i++){
+    const el=document.createElement('div');
+    el.className='char-particle';
+    el.textContent=rainChars[Math.floor(Math.random()*rainChars.length)];
+    el.style.left=Math.random()*90+5+'%';
+    el.style.animationDuration=4+Math.random()*6+'s';
+    el.style.animationDelay=Math.random()*8+'s';
+    el.style.fontSize=16+Math.random()*24+'px';
+    area.appendChild(el);
+  }
+  const center = area.querySelector('.char-center');
+  const words = '你好好好啊鬼畜活字刷剪辑制作'.split('');
+  let wi=0;
+  rainInterval = setInterval(()=>{
+    center.textContent=words[wi++ % words.length];
+  }, 800);
+}
+
+// Scene 3: Timeline
+let tlChars = '你好好好啊鬼畜活字刷剪辑制作';
+function buildTimeline(){
+  const track=document.getElementById('tlTrack');
+  track.innerHTML='';
+  [...tlChars].forEach((ch,i)=>{
+    const el=document.createElement('div');
+    el.className='tl-item';
+    el.textContent=ch;
+    setTimeout(()=>el.classList.add('show'),i*80);
+    track.appendChild(el);
+  });
+}
+
+// Scene 4: Big char bounce
+let bci=0;
+const bigChars = document.querySelectorAll('.big-char');
+function animateBigChars(){
+  bigChars.forEach((c,i)=>{
+    setTimeout(()=>{
+      c.classList.add('show');
+      c.classList.add('bounce');
+      setTimeout(()=>c.classList.remove('bounce'),500);
+    },i*600);
+  });
+  // Repeat
+  setTimeout(animateBigChars, 4000);
+}
+
+// Scene 5: Rapid fire (鬼畜核心)
+let rapidChars = [];
+function initRapid(){
+  const area = document.getElementById('rapidArea');
+  area.innerHTML='';
+  rapidChars=[];
+  const text = '鬼畜活字刷鬼畜活字刷剪辑制作神器鬼畜活字刷';
+  [...text].forEach((ch,i)=>{
+    const el=document.createElement('div');
+    el.className='rapid-char';
+    el.textContent=ch;
+    el.style.left=(i*40)+'px';
+    if(i%3===0) el.classList.add('top');
+    else if(i%3===1) el.classList.add('mid');
+    else el.classList.add('bot');
+    area.appendChild(el);
+    rapidChars.push({el,delay:i*60});
+  });
+}
+function animateRapid(){
+  rapidChars.forEach((item,i)=>{
+    setTimeout(()=>{
+      const x = Math.random()*20-10;
+      item.el.style.transform=`translateX(${x}px) scale(${1+Math.random()*0.3})`;
+      item.el.style.opacity=0.6+Math.random()*0.4;
+      setTimeout(()=>{
+        item.el.style.transform='translateX(0) scale(1)';
+        item.el.style.opacity=1;
+      },100);
+    },item.delay);
+  });
+  setTimeout(animateRapid, rapidChars.length*60 + 500);
+}
+
+// Scene control
+const scenes = document.querySelectorAll('.scene');
+let ci=0;
+const sceneDurations = [5,6,8,8,7,6]; // total: 40s
+
+function switchToScene(idx){
+  scenes.forEach(s=>s.classList.remove('active'));
+  scenes[idx].classList.add('active');
+  // Init scene-specific
+  if(idx===1) startRain();
+  if(idx===2) buildTimeline();
+  if(idx===3) animateBigChars();
+  if(idx===4) {initRapid();setTimeout(animateRapid,500);}
+}
+
+// Auto play
+switchToScene(0);
+let timeOffset = sceneDurations[0];
+for(let i=1;i<scenes.length;i++){
+  setTimeout(()=>switchToScene(i), timeOffset*1000);
+  timeOffset += sceneDurations[i];
+}
+</script>
+</body>
+</html>

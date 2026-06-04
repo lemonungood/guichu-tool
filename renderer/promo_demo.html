@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>鬼畜活字乱刷 — 操作演示</title>
+<style>
+:root{--bg:#1a1a2e;--surface:#16213e;--border-sub:#333;--text:#e0e0e0;--text-dim:#888;--accent:#e94560}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;font-family:'Segoe UI','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--text);overflow:hidden;width:100vw}
+.app{display:flex;flex-direction:column;height:100vh;background:var(--bg)}
+
+/* Titlebar */
+.titlebar{display:flex;align-items:center;height:36px;background:#0f0f1e;padding:0 14px}
+.titlebar-text{font-size:13px;font-weight:600;color:#888}
+
+/* Step indicator */
+.steps{display:flex;justify-content:center;gap:0;padding:10px 0;background:var(--surface);border-bottom:1px solid var(--border-sub)}
+.step{display:flex;align-items:center;gap:6px;padding:4px 14px;font-size:12px;color:var(--text-dim);opacity:.4;transition:all .4s}
+.step.active{opacity:1;color:var(--text)}
+.step .num{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;background:var(--border-sub);color:var(--text-dim)}
+.step.active .num{background:var(--accent);color:#fff}
+.step.done .num{background:#4aaf50;color:#fff}
+.step-arrow{color:var(--border-sub);font-size:10px}
+
+/* Content area */
+#content{flex:1;display:flex;align-items:center;justify-content:center;position:relative}
+.slide{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;transition:opacity .5s;width:100%;height:100%}
+.slide.active{opacity:1}
+
+/* Slide: Select video */
+#s1 .big-btn{width:200px;height:120px;border:2px dashed var(--border-sub);border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:14px;color:var(--text-dim);cursor:pointer;transition:all .3s}
+#s1 .big-btn:hover{border-color:var(--accent);color:var(--accent)}
+#s1 .big-btn .ico{font-size:48px;margin-bottom:8px}
+
+/* Slide: Recognize */
+#s2 .wave-area{width:320px;height:80px;display:flex;align-items:center;justify-content:center;gap:3px}
+#s2 .bar{width:4px;background:var(--accent);border-radius:2px;animation:wave .6s ease-in-out infinite alternate}
+@keyframes wave{0%{height:10px}100%{height:60px}}
+#s2 .bar:nth-child(2){animation-delay:.1s;height:15px}
+#s2 .bar:nth-child(3){animation-delay:.2s;height:25px}
+#s2 .bar:nth-child(4){animation-delay:.3s;height:40px}
+#s2 .bar:nth-child(5){animation-delay:.15s;height:50px}
+#s2 .bar:nth-child(6){animation-delay:.25s;height:35px}
+#s2 .bar:nth-child(7){animation-delay:.35s;height:20px}
+#s2 .label{font-size:15px;font-weight:600;color:var(--text);margin-top:16px}
+#s2 .sub{font-size:12px;color:var(--text-dim);margin-top:6px}
+
+/* Slide: Char panel + timeline */
+#s3 .demo-layout{display:flex;gap:16px;width:600px;max-width:92vw}
+#s3 .left-panel{flex:1}
+#s3 .right-panel{width:160px;background:var(--surface);border:1px solid var(--border-sub);border-radius:8px;padding:10px}
+#s3 .panel-title{font-size:11px;color:var(--accent);font-weight:600;margin-bottom:6px;letter-spacing:1px}
+.char-grid{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.char-item{width:32px;height:32px;border:1px solid var(--border-sub);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;cursor:pointer;background:rgba(255,255,255,.03);transition:all .2s;color:var(--text)}
+.char-item:hover{border-color:var(--accent);transform:scale(1.1)}
+.char-item.added{border-color:var(--accent);background:rgba(233,69,96,.15)}
+.timeline-area{background:var(--surface);border:1px solid var(--border-sub);border-radius:8px;padding:8px;min-height:44px;display:flex;gap:3px;align-items:center;margin-top:6px;flex-wrap:wrap}
+.tl-block{height:32px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;padding:0 8px;animation:popIn .3s cubic-bezier(.34,1.56,.64,1)}
+@keyframes popIn{0%{transform:scale(0)}100%{transform:scale(1)}}
+.arrow-hint{font-size:20px;color:var(--accent);margin:8px 0;text-align:center}
+
+/* Slide: Export */
+#s4 .check-icon{font-size:72px;margin-bottom:12px}
+#s4 .done-text{font-size:20px;font-weight:700;color:#4aaf50;letter-spacing:2px}
+#s4 .done-sub{font-size:13px;color:var(--text-dim);margin-top:8px}
+
+/* Bottom status bar */
+.status-bar{height:28px;background:#0f0f1e;border-top:1px solid var(--border-sub);display:flex;align-items:center;padding:0 14px;font-size:11px;color:var(--text-dim)}
+.status-bar .bar{flex:1}
+.status-bar .pct{font-family:monospace;font-size:10px}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="titlebar"><span class="titlebar-text">鬼畜活字乱刷</span></div>
+
+  <!-- Step indicator -->
+  <div class="steps" id="stepBar">
+    <div class="step active" data-s="0"><span class="num">1</span> 导入视频</div>
+    <span class="step-arrow">→</span>
+    <div class="step" data-s="1"><span class="num">2</span> 语音识别</div>
+    <span class="step-arrow">→</span>
+    <div class="step" data-s="2"><span class="num">3</span> 排字编辑</div>
+    <span class="step-arrow">→</span>
+    <div class="step" data-s="3"><span class="num">4</span> 导出成片</div>
+  </div>
+
+  <!-- Content -->
+  <div id="content">
+    <div class="slide active" id="s1">
+      <div class="big-btn" id="importBtn">
+        <div class="ico">📂</div>
+        <div>点击导入视频</div>
+      </div>
+      <div style="font-size:12px;color:var(--text-dim);margin-top:16px">支持 MP4 / AVI / MOV 等常见格式</div>
+    </div>
+
+    <div class="slide" id="s2">
+      <div class="wave-area" id="waveBars"></div>
+      <div class="label" id="recogLabel">🎤 语音识别中...</div>
+      <div class="sub" id="recogSub">正在分析音频 · 逐字定位时间戳</div>
+      <div style="margin-top:12px;display:flex;gap:8px;font-size:11px;color:var(--text-dim)" id="charHint">
+        <span>已识别: 32 个字</span>
+      </div>
+    </div>
+
+    <div class="slide" id="s3">
+      <div class="demo-layout">
+        <div class="left-panel">
+          <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px;font-weight:600">📋 时间轴</div>
+          <div class="timeline-area" id="timelineArea">
+            <span style="font-size:11px;color:var(--text-muted)" id="tlHint">点击右侧字库添加...</span>
+          </div>
+          <div style="display:flex;gap:6px;margin-top:6px">
+            <div style="padding:3px 10px;border:1px solid var(--border-sub);border-radius:4px;font-size:10px;color:var(--text-dim)">▶ 播放全部</div>
+            <div style="padding:3px 10px;border:1px solid var(--accent);border-radius:4px;font-size:10px;color:var(--accent);background:rgba(233,69,96,.1)">📤 导出</div>
+          </div>
+        </div>
+        <div class="right-panel">
+          <div class="panel-title">📖 字库</div>
+          <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">共 32 个字 · 点击添加</div>
+          <div class="char-grid" id="charGrid"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="slide" id="s4">
+      <div class="check-icon">✅</div>
+      <div class="done-text">导出成功</div>
+      <div class="done-sub">鬼畜活字乱刷 · 文本动画编辑神器</div>
+    </div>
+  </div>
+
+  <!-- Status bar -->
+  <div class="status-bar">
+    <span class="bar" id="statusText">就绪</span>
+    <span class="pct" id="statusPct"></span>
+  </div>
+</div>
+
+<script>
+const chars = '你你好好啊鬼畜活字刷剪辑配音音频轨道导出导入识别制作'.split('');
+const timeline = [];
+let stepIdx = 0;
+const slides = document.querySelectorAll('.slide');
+const stepEls = document.querySelectorAll('.step');
+
+function goStep(idx){
+  slides.forEach(s=>s.classList.remove('active'));
+  slides[idx].classList.add('active');
+  stepEls.forEach((s,i)=>{
+    s.classList.toggle('active',i===idx);
+    s.classList.toggle('done',i<idx);
+  });
+  stepIdx = idx;
+  if(idx===1) startRecognition();
+  if(idx===2) initCharPanel();
+  if(idx===3) showExportDone();
+}
+
+// Step 2: Recognition animation
+let recogTimer;
+function startRecognition(){
+  document.getElementById('statusText').textContent = '语音识别中... 67%';
+  document.getElementById('statusPct').textContent = '67%';
+  const label = document.getElementById('recogLabel');
+  const sub = document.getElementById('recogSub');
+  const hint = document.getElementById('charHint');
+  const texts = [
+    ['🎤 正在提取音频...','分离人声轨道',0],
+    ['🔊 语音识别中 15%','Whisper 模型加载中...',0],
+    ['🔊 语音识别中 42%','分析音频特征...',5],
+    ['🔊 语音识别中 67%','逐字时间戳定位...',12],
+    ['🔊 语音识别中 89%','正在生成字库...',28],
+    ['✅ 识别完成!','共识别 32 个不同字, 47 个片段','32']
+  ];
+  let ti=0;
+  clearInterval(recogTimer);
+  recogTimer = setInterval(()=>{
+    ti++;
+    if(ti >= texts.length){
+      clearInterval(recogTimer);
+      document.getElementById('statusText').textContent = '已识别 32 个字';
+      document.getElementById('statusPct').textContent = '100%';
+      setTimeout(()=>{goStep(2); autoAddChars();}, 800);
+      return;
+    }
+    const [t, s, count] = texts[ti];
+    label.textContent = t;
+    sub.textContent = s;
+    if(count > 0) hint.innerHTML = `<span>已识别: ${count} 个字</span>`;
+    const pct = t.match(/(\d+)%/);
+    if(pct) document.getElementById('statusPct').textContent = pct[0];
+  }, 1200);
+}
+
+// Step 3: Char panel
+function initCharPanel(){
+  document.getElementById('statusText').textContent = '编辑模式 · 点击字库添加字到时间轴';
+  document.getElementById('statusPct').textContent = '';
+  const grid = document.getElementById('charGrid');
+  grid.innerHTML = '';
+  chars.forEach((ch,i)=>{
+    const el = document.createElement('div');
+    el.className = 'char-item';
+    el.textContent = ch;
+    el.onclick = ()=>{
+      if(el.classList.contains('added')) return;
+      el.classList.add('added');
+      addToTimeline(ch);
+    };
+    setTimeout(()=>grid.appendChild(el), i*30);
+  });
+}
+
+function addToTimeline(ch){
+  timeline.push(ch);
+  const area = document.getElementById('timelineArea');
+  const hint = document.getElementById('tlHint');
+  if(hint) hint.remove();
+  const block = document.createElement('div');
+  block.className = 'tl-block';
+  const colors = ['#4a8cff','#e94560','#4aaf50','#e9a545','#9b59b6','#1abc9c','#3498db','#e74c3c'];
+  block.style.background = colors[timeline.length % colors.length];
+  block.textContent = ch;
+  area.appendChild(block);
+  document.getElementById('statusText').textContent = `时间轴: ${timeline.length} 个字`;
+  if(timeline.length >= 10) {
+    setTimeout(()=>{
+      document.getElementById('statusText').textContent = '点击导出按钮生成最终视频...';
+      setTimeout(()=>goStep(3), 1500);
+    }, 600);
+  }
+}
+
+// Auto-add chars after recognition
+function autoAddChars(){
+  const items = document.querySelectorAll('#charGrid .char-item');
+  if(!items.length) return;
+  let ai = 0;
+  const autoTimer = setInterval(()=>{
+    if(ai >= items.length || ai >= 10) { clearInterval(autoTimer); return; }
+    items[ai].click();
+    ai++;
+  }, 400);
+}
+
+// Step 4: Export done
+function showExportDone(){
+  document.getElementById('statusText').textContent = '导出完成!';
+  document.getElementById('statusPct').textContent = '100%';
+}
+
+// Auto-play through steps
+goStep(0);
+document.getElementById('statusText').textContent = '就绪 · 点击导入开始演示';
+document.getElementById('importBtn').onclick = ()=>{
+  document.getElementById('statusText').textContent = '正在复制视频...';
+  document.getElementById('statusPct').textContent = '5%';
+  setTimeout(()=>{
+    document.getElementById('statusPct').textContent = '15%';
+    document.getElementById('statusText').textContent = '视频导入完成';
+    setTimeout(()=>goStep(1), 500);
+  }, 800);
+};
+
+// Also auto-click import after 2s for recording
+setTimeout(()=>{
+  if(stepIdx === 0) document.getElementById('importBtn').click();
+}, 2000);
+</script>
+</body>
+</html>
