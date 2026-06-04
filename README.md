@@ -2,7 +2,7 @@
 
 A video character-level editing tool with AI speech recognition, built on Electron.
 
-Download the latest installer from [Releases](https://github.com/THEWINDOWS11/guichu-tool/releases).
+Download the latest installer from [Releases](https://github.com/lemonungood/guichu-tool/releases).
 
 ## Usage
 
