@@ -1,0 +1,12 @@
+{
+  "name": "guichu-tool",
+  "version": "1.0.0",
+  "description": "鬼畜活字乱刷工具 - 视频字库编排工具",
+  "main": "main.js",
+  "scripts": {
+    "start": ".\\fizmaker.exe .",
+    "dist": "electron-builder",
+    "dist:portable": "electron-builder --win portable",
+    "dist:dir": "electron-builder --dir"
+  }
+}
