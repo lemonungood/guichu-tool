@@ -44,4 +44,7 @@ contextBridge.exposeInMainWorld('api', {
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
   checkForUpdate: () => ipcRenderer.invoke('check-for-update'),
   onUpdateAvailable: (cb) => { ipcRenderer.on('update-available', (e, d) => cb(d)); },
+  fileExists: (p) => ipcRenderer.invoke('file-exists', p),
+  logOpenDir: () => ipcRenderer.invoke('log-open-dir'),
+  logWrite: (level, ...args) => ipcRenderer.invoke('log-write', { level, args }),
 });

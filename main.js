@@ -21,7 +21,7 @@ const ffmpegPath = path.join(ffmpegDir, 'ffmpeg.exe');
 const ffprobePath = path.join(ffmpegDir, 'ffprobe.exe');
 const whisperDir = path.join(resourcesPath, 'whisper');
 const whisperCliPath = path.join(whisperDir, 'whisper-cli.exe');
-const whisperModelPath = path.join(whisperDir, 'ggml-base.bin');
+const whisperModelPath = path.join(resourcesPath, 'models', 'ggml-medium.bin');
 const segmentsDir = path.join(resourcesPath, 'segments');
 const outputDir = path.join(resourcesPath, 'output');
 const logsDir = path.join(app.getPath('userData'), 'logs');
@@ -294,11 +294,20 @@ ipcMain.handle('get-video-info', async (e, videoPath) => {
   });
 });
 
+let transcribing = false;
+
 ipcMain.handle('transcribe-audio', async (e, videoPath) => {
-  console.log('[识别] 开始语音识别, 视频:', videoPath?.split(/[\\/]/).pop(), '模型:', whisperModelPath);
-  return new Promise((resolve, reject) => {
-    if (!fs.existsSync(whisperModelPath)) return reject(new Error('模型文件不存在: ' + whisperModelPath + '，请确认 ggml-base.bin 已下载'));
-    ensureDir(whisperDir);
+  try {
+    if (transcribing) return { error: '已有识别任务进行中', words: [] };
+    transcribing = true;
+    console.log('[识别] 开始语音识别, 视频:', videoPath?.split(/[\\/]/).pop(), '模型:', whisperModelPath);
+    if (!fs.existsSync(whisperModelPath)) {
+      transcribing = false;
+      return { error: '模型文件不存在，请重新运行安装程序', words: [] };
+    }
+    return new Promise((resolve, reject) => {
+      const done = (err, result) => { transcribing = false; if (err) reject(err); else resolve(result); };
+      ensureDir(whisperDir);
     const audioCopy = path.join(whisperDir, 'temp_audio.wav');
     const outPrefix = path.join(whisperDir, 'whisper_out');
 
@@ -313,8 +322,8 @@ ipcMain.handle('transcribe-audio', async (e, videoPath) => {
       // 1. Extract audio
       const extractProc = spawn(ffmpegPath, ['-y', '-i', videoPath, '-vn', '-acodec', 'pcm_s16le', '-ar', '16000', '-ac', '1', audioCopy]);
       extractProc.on('close', (code) => {
-        if (code !== 0) return reject(new Error('提取音频失败'));
-        if (!fs.existsSync(audioCopy)) return reject(new Error('音频文件未生成'));
+        if (code !== 0) return done(new Error('提取音频失败'));
+        if (!fs.existsSync(audioCopy)) return done(new Error('音频文件未生成'));
 
         // 2. Run whisper-cli with word-level timestamps + progress
         // -l zh : Chinese language
@@ -355,13 +364,13 @@ ipcMain.handle('transcribe-audio', async (e, videoPath) => {
           // Cleanup audio
           try { fs.unlinkSync(audioCopy); } catch {}
 
-          if (code2 !== 0) return reject(new Error('语音识别失败，退出码 ' + code2));
+          if (code2 !== 0) return done(new Error('语音识别失败，退出码 ' + code2));
 
           // 3. Parse JSON output
           const jsonPath = outPrefix + '.json';
-          if (!fs.existsSync(jsonPath)) return reject(new Error('识别输出文件未生成'));
+          if (!fs.existsSync(jsonPath)) return done(new Error('识别输出文件未生成'));
           let raw;
-          try { raw = fs.readFileSync(jsonPath, 'utf-8'); } catch (e) { return reject(new Error('读取识别结果失败: ' + e.message)); }
+          try { raw = fs.readFileSync(jsonPath, 'utf-8'); } catch (e) { return done(new Error('读取识别结果失败: ' + e.message)); }
 
           let words = [];
           try {
@@ -403,19 +412,28 @@ ipcMain.handle('transcribe-audio', async (e, videoPath) => {
 
               words = words.concat(segWords);
             }
-          } catch (e) { return reject(new Error('解析识别结果失败: ' + e.message)); }
+          } catch (e) { return done(new Error('解析识别结果失败: ' + e.message)); }
 
           // Send 100% progress
           try { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('transcribe-progress', { percent: 100, text: '识别完成' }); } catch {}
           try { fs.unlinkSync(jsonPath); } catch {}
           console.log('[识别] 完成: words:', words.length, '个, 总时长:', words.length > 0 ? (words[words.length-1].endMs - words[0].startMs)+'ms' : 'N/A');
-          resolve({ words });
+          done(null, { words });
         });
       });
-      extractProc.on('error', reject);
+      extractProc.on('error', (e) => done(e));
     });
     probe.on('error', () => {});
+  }).catch(e => {
+    console.error('[识别] Promise rejected:', e?.message || e || 'unknown error');
+    transcribing = false;
+    throw e;
   });
+} catch(e) {
+  transcribing = false;
+  console.error('[识别] 同步错误:', e?.message || e);
+  return { error: '识别启动失败: ' + (e?.message || e || '未知错误'), words: [] };
+}
 });
 
 ipcMain.handle('extract-clip', async (e, { videoPath, startMs, endMs, outputName }) => {
@@ -460,7 +478,7 @@ ipcMain.handle('batch-extract-clips', async (e, { videoPath, projectId, clips, b
   const total = clips.length;
   const results = new Array(total).fill(null);
   let completed = 0;
-  const concurrencyLimit = Math.max(1, Math.min(8, parseInt(concurrency) || 1));
+  const concurrencyLimit = Math.max(1, parseInt(concurrency) || 1);
   let nextIndex = 0;       // 下一个要处理的 clip 下标
   let activeJobs = 0;      // 当前运行中的 FFmpeg 数量
 
