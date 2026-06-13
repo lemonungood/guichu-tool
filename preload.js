@@ -36,6 +36,7 @@ contextBridge.exposeInMainWorld('api', {
   pluginDelete: (name) => ipcRenderer.invoke('plugin-delete', name),
   pluginInvoke: (pluginName, channel, ...args) => ipcRenderer.invoke('plugin:' + pluginName + ':' + channel, ...args),
   onPluginEvent: (pluginName, channel, cb) => { ipcRenderer.on('plugin:' + pluginName + ':' + channel, (e, d) => cb(d)); },
+  pluginIcon: (name) => ipcRenderer.invoke('plugin-icon', name),
   uiPackList: () => ipcRenderer.invoke('ui-pack-list'),
   uiPackApply: (name) => ipcRenderer.invoke('ui-pack-apply', name),
   uiPackImportZip: () => ipcRenderer.invoke('ui-pack-import-zip'),

@@ -390,7 +390,7 @@ ipcMain.handle('transcribe-audio', async (e, videoPath) => {
                   if (txt.startsWith('[') && txt.endsWith(']')) continue;
                   const ws = tok.offsets?.from;
                   const we = tok.offsets?.to;
-                  if (ws != null && we != null && we > ws && we - ws >= 10) { // min 10ms for a real word
+                  if (ws != null && we != null && we > ws) {
                     segWords.push({ text: txt, startMs: ws, endMs: we });
                   }
                 }
@@ -656,7 +656,8 @@ ipcMain.handle('build-preview', async (e, { clips }) => {
       fs.writeFileSync(concatFile, lines.join('\n'), 'utf-8');
       const proc = spawn(ffmpegPath, [
         '-y', '-f', 'concat', '-safe', '0', '-i', concatFile,
-        '-c', 'copy',
+        '-c:v', 'copy',
+        '-c:a', 'aac', '-b:a', '128k',
         previewPath
       ], { cwd: ffmpegDir });
       let errOut = '';
@@ -854,6 +855,23 @@ ipcMain.handle('plugin-delete', async (e, pluginName) => {
   fs.rmSync(dir, { recursive: true, force: true });
   return true;
 });
+
+// --- Plugin Icon ---
+ipcMain.handle('plugin-icon', async (e, pluginName) => {
+  const dir = path.join(pluginsDir, pluginName);
+  if (!fs.existsSync(dir)) return null;
+  try {
+    const manifest = JSON.parse(fs.readFileSync(path.join(dir, 'manifest.json'), 'utf-8'));
+    if (!manifest.icon) return null;
+    const iconPath = path.join(dir, manifest.icon);
+    if (!fs.existsSync(iconPath)) return null;
+    const ext = path.extname(iconPath).toLowerCase();
+    const mime = ext === '.png' ? 'image/png' : ext === '.svg' ? 'image/svg+xml' : ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' : 'image/png';
+    const data = fs.readFileSync(iconPath).toString('base64');
+    return 'data:' + mime + ';base64,' + data;
+  } catch { return null; }
+});
+
 
 function copyDirSync(src, dest) {
   fs.mkdirSync(dest, { recursive: true });
